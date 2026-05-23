@@ -1,0 +1,16 @@
+app = "playtime"
+primary_region = "dfw"
+
+[build]
+
+[[services]]
+  protocol = "tcp"
+  internal_port = 80
+
+  [[services.ports]]
+    port = 80
+    handlers = ["http"]
+
+  [[services.ports]]
+    port = 443
+    handlers = ["tls", "http"]
