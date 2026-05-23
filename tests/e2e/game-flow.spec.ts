@@ -65,6 +65,52 @@ test.describe('Full game flow', () => {
     expect(timerAfterResume).not.toBe(timerBeforePause)
   })
 
+  test('4-player game: switch to player 2 resets player 1 This turn and retains Total', async ({ page }) => {
+    await page.goto('/')
+
+    // Add 2 more players to get 4 total
+    await page.getByRole('button', { name: '+ Add Player' }).click()
+    await page.getByRole('button', { name: '+ Add Player' }).click()
+    await expect(page.getByRole('textbox', { name: 'Player name' })).toHaveCount(4)
+
+    // Start the game
+    await page.getByRole('button', { name: 'Start Game' }).click()
+    await expect(page).toHaveURL('/game')
+
+    // Player 1 is active — let a brief moment pass so timers advance
+    await page.waitForTimeout(800)
+
+    // Get player 1's Total value before switching — it should be non-zero
+    const player1Card = page.getByRole('button', { name: /Player 1/ })
+
+    // Switch to player 2
+    const player2Card = page.getByRole('button', { name: /Player 2/ })
+    await player2Card.click()
+
+    // Player 1's "This turn" should reset to 0:00:00.000
+    // The PlayerCard for Player 1 renders both Total and This turn.
+    // We locate the "This turn" value within player 1's card area.
+    // Since all cards show "This turn" label, we verify the value is 0:00:00.000
+    // by checking player 1's card contains that text.
+    await expect(player1Card.getByText('0:00:00.000')).toBeVisible()
+
+    // Player 1's Total should be non-zero (not "0:00:00.000" — two values exist in card)
+    // The Total is formatTime(player.totalMs + currentTurnMs) where currentTurnMs=0 for inactive
+    // and totalMs was accumulated from the first turn.
+    // So Total = formatTime(totalMs) — it should NOT be 0:00:00.000 for the Total timer.
+    // Verify player 1 card has exactly one "0:00:00.000" (the "This turn" one, not Total)
+    const zeroTimes = await player1Card.getByText('0:00:00.000').count()
+    // "This turn" shows 0:00:00.000; Total should show non-zero time
+    expect(zeroTimes).toBe(1)
+
+    // Player 2 is now active — both their timers should be ticking
+    // Wait a moment and verify player 2's "This turn" advances
+    const player2ThisTurnBefore = await player2Card.getByText(/\d:\d\d:\d\d\.\d\d\d/).nth(1).textContent()
+    await page.waitForTimeout(500)
+    const player2ThisTurnAfter = await player2Card.getByText(/\d:\d\d:\d\d\.\d\d\d/).nth(1).textContent()
+    expect(player2ThisTurnAfter).not.toBe(player2ThisTurnBefore)
+  })
+
   test('clicking a player while paused has no effect', async ({ page }) => {
     await page.goto('/')
     await page.getByRole('button', { name: 'Start Game' }).click()

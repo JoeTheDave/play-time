@@ -15,51 +15,35 @@ export function PlayerCard({ player, currentTurnMs, isActive, isPaused, onClick 
       onClick={onClick}
       disabled={isPaused && !isActive}
       className={[
-        'flex w-full flex-col items-center rounded-xl p-4 text-left transition-all',
-        isActive
-          ? 'shadow-lg'
-          : 'border border-gray-200 bg-white text-gray-800 shadow-sm hover:shadow-md',
-        isPaused && !isActive ? 'cursor-default opacity-70' : 'cursor-pointer',
+        'flex w-full h-full flex-col items-center justify-center text-white transition-all',
+        isActive ? 'ring-4 ring-white ring-offset-2' : '',
+        isPaused && !isActive ? 'cursor-default' : 'cursor-pointer',
       ].join(' ')}
-      style={
-        isActive
-          ? {
-              backgroundColor: `${player.color}22`,
-              borderWidth: '4px',
-              borderStyle: 'solid',
-              borderColor: player.color,
-            }
-          : undefined
-      }
+      style={{
+        backgroundColor: player.color,
+        filter: isActive ? 'brightness(1.35)' : 'none',
+      }}
       aria-label={`${player.name}${isActive ? ' (active)' : ''}`}
     >
-      <div className="mb-2 w-full text-center">
-        <span
-          className="text-lg font-bold"
-          style={isActive ? { color: player.color } : undefined}
-        >
+      <div className="mb-3 w-full text-center">
+        <span className="text-xl font-bold drop-shadow">
           {player.name}
         </span>
       </div>
 
       <div className="w-full text-center">
-        <div className="text-sm text-gray-500">Total</div>
-        <div className="font-mono text-2xl font-semibold tabular-nums">
-          {formatTime(player.totalMs)}
+        <div className="text-sm font-medium uppercase tracking-wide opacity-80">Total</div>
+        <div className="font-mono text-2xl font-semibold tabular-nums drop-shadow">
+          {formatTime(player.totalMs + currentTurnMs)}
         </div>
       </div>
 
-      {isActive && (
-        <div className="mt-3 w-full text-center">
-          <div className="text-sm text-gray-500">This turn</div>
-          <div
-            className="font-mono text-xl font-semibold tabular-nums"
-            style={{ color: player.color }}
-          >
-            {formatTime(currentTurnMs)}
-          </div>
+      <div className="mt-3 w-full text-center">
+        <div className="text-sm font-medium uppercase tracking-wide opacity-80">This turn</div>
+        <div className="font-mono text-xl font-semibold tabular-nums drop-shadow">
+          {formatTime(currentTurnMs)}
         </div>
-      )}
+      </div>
     </button>
   )
 }

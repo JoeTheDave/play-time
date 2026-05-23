@@ -7,7 +7,7 @@ interface GameContextValue {
   setSetupPlayers: (players: Player[]) => void
 }
 
-const GameContext = createContext<GameContextValue | null>(null)
+export const GameContext = createContext<GameContextValue | null>(null)
 
 export function GameProvider({ children }: { children: ReactNode }) {
   const [setupPlayers, setSetupPlayers] = useState<Player[]>([])

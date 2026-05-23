@@ -80,14 +80,15 @@ export function useGameState(initialPlayers: Player[]): GameStateHook {
     // Guard: do nothing if paused
     if (gamePausedRef.current) return
 
+    // Capture elapsed turn time NOW, before the setPlayers updater runs
+    // (updater may run twice in StrictMode — reading refs here is safe)
+    const elapsedTurn = pausedTurnMs.current + (Date.now() - turnStartedAt.current)
+
     setPlayers(prevPlayers => {
       const currentActive = prevPlayers.find(p => p.isActive)
       if (currentActive?.id === id) return prevPlayers
 
-      // Accumulate elapsed time into the outgoing active player's total
-      const elapsedTurn = pausedTurnMs.current + (Date.now() - turnStartedAt.current)
-
-      const updated = prevPlayers.map(p => {
+      return prevPlayers.map(p => {
         if (p.isActive) {
           return { ...p, isActive: false, totalMs: p.totalMs + elapsedTurn }
         }
@@ -96,14 +97,13 @@ export function useGameState(initialPlayers: Player[]): GameStateHook {
         }
         return p
       })
-
-      // Reset turn tracking for the new active player
-      pausedTurnMs.current = 0
-      turnStartedAt.current = Date.now()
-      setActivePlayerId(id)
-
-      return updated
     })
+
+    // Reset turn tracking for the new active player — outside the updater
+    // so these side-effects run exactly once (same pattern as togglePause fix)
+    pausedTurnMs.current = 0
+    turnStartedAt.current = Date.now()
+    setActivePlayerId(id)
   }, [])
 
   const togglePause = useCallback(() => {
