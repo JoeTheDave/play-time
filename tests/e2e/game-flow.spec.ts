@@ -17,12 +17,12 @@ test.describe('Full game flow', () => {
     await page.getByRole('button', { name: 'Start Game' }).click()
     await expect(page).toHaveURL('/game')
 
-    // Verify Player 1 is active (has "This turn" label)
-    await expect(page.getByText('This turn')).toBeVisible()
-
     // Get all player cards
     const player1Card = page.getByRole('button', { name: /Player 1/ })
     const player2Card = page.getByRole('button', { name: /Player 2/ })
+
+    // Verify Player 1 is active (has "This turn" label)
+    await expect(player1Card.getByText('This turn')).toBeVisible()
 
     // Player 1 should be active initially
     await expect(player1Card).toBeVisible()
@@ -34,9 +34,7 @@ test.describe('Full game flow', () => {
     await player2Card.click()
 
     // Verify Player 2 is now active (shows "This turn")
-    // The active card shows "This turn" section
-    const thisTurnLabels = page.getByText('This turn')
-    await expect(thisTurnLabels).toBeVisible()
+    await expect(player2Card.getByText('This turn')).toBeVisible()
 
     // Get the game timer text before pausing
     const gameTimerLocator = page.locator('.font-mono.text-4xl')
@@ -124,6 +122,7 @@ test.describe('Full game flow', () => {
 
     // Force-click the disabled button and verify Player 1 is still active
     await player2Card.click({ force: true })
-    await expect(page.getByText('This turn')).toBeVisible()
+    const player1Card = page.getByRole('button', { name: /Player 1/ })
+    await expect(player1Card.getByText('This turn')).toBeVisible()
   })
 })
