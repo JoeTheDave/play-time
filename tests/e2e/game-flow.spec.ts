@@ -36,15 +36,15 @@ test.describe('Full game flow', () => {
     // Verify Player 2 is now active (shows "This turn")
     await expect(player2Card.getByText('This turn')).toBeVisible()
 
-    // Get the game timer text before pausing
-    const gameTimerLocator = page.locator('.font-mono.text-4xl')
-    const timerBeforePause = await gameTimerLocator.textContent()
-
     // Pause the game
+    const gameTimerLocator = page.locator('.font-mono.text-4xl')
     await page.getByRole('button', { name: 'Pause' }).click()
 
-    // Verify Resume button is shown
+    // Verify Resume button is shown (pause is now active)
     await expect(page.getByRole('button', { name: 'Resume' })).toBeVisible()
+
+    // Read the frozen timer value after pause has taken effect
+    const timerBeforePause = await gameTimerLocator.textContent()
 
     // Wait and verify game timer is frozen
     await page.waitForTimeout(1000)
