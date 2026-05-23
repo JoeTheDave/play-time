@@ -6,6 +6,8 @@ interface TileLayout {
   cols: number
 }
 
+const GAP = 10
+
 function computeLayout(playerCount: number, containerWidth: number, containerHeight: number): TileLayout {
   if (playerCount <= 0 || containerWidth <= 0 || containerHeight <= 0) {
     return { tileWidth: containerWidth, tileHeight: containerHeight, cols: 1 }
@@ -16,8 +18,8 @@ function computeLayout(playerCount: number, containerWidth: number, containerHei
 
   for (let c = 1; c <= playerCount; c++) {
     const rows = Math.ceil(playerCount / c)
-    const tileW = containerWidth / c
-    const tileH = containerHeight / rows
+    const tileW = (containerWidth - GAP * (c - 1)) / c
+    const tileH = (containerHeight - GAP * (rows - 1)) / rows
     const minDim = Math.min(tileW, tileH)
     if (minDim > bestMinDimension) {
       bestMinDimension = minDim
@@ -27,8 +29,8 @@ function computeLayout(playerCount: number, containerWidth: number, containerHei
 
   const bestRows = Math.ceil(playerCount / bestCols)
   return {
-    tileWidth: containerWidth / bestCols,
-    tileHeight: containerHeight / bestRows,
+    tileWidth: (containerWidth - GAP * (bestCols - 1)) / bestCols,
+    tileHeight: (containerHeight - GAP * (bestRows - 1)) / bestRows,
     cols: bestCols,
   }
 }
