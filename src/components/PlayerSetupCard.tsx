@@ -77,7 +77,7 @@ export function PlayerSetupCard({ player, onChange, onRemove, onColorChange, sho
           onClick={() => setPickerOpen((open: boolean) => !open)}
         />
         {pickerOpen && (
-          <div className="absolute left-0 top-8 z-10 rounded-lg border border-gray-200 bg-white p-2 shadow-lg">
+          <div className="absolute left-0 top-8 z-10 w-max rounded-lg border border-gray-200 bg-white p-2 shadow-lg">
             <div className="grid grid-cols-4 gap-1">
               {PLAYER_COLORS.map(color => (
                 <button

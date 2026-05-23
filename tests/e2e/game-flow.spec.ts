@@ -37,7 +37,7 @@ test.describe('Full game flow', () => {
     await expect(player2Card.getByText('This turn')).toBeVisible()
 
     // Pause the game
-    const gameTimerLocator = page.locator('.font-mono.text-4xl')
+    const gameTimerLocator = page.locator('.font-mono.text-4xl.font-bold')
     await page.getByRole('button', { name: 'Pause' }).click()
 
     // Verify Resume button is shown (pause is now active)
