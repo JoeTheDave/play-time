@@ -107,22 +107,21 @@ export function useGameState(initialPlayers: Player[]): GameStateHook {
   }, [])
 
   const togglePause = useCallback(() => {
-    setGamePaused(wasPaused => {
-      const now = Date.now()
-      if (wasPaused) {
-        // Resuming: reset wall-clock origins; accumulated values remain
-        gameStartedAt.current = now
-        turnStartedAt.current = now
-        gamePausedRef.current = false
-        return false
-      } else {
-        // Pausing: snapshot elapsed time into accumulators
-        pausedGameMs.current = pausedGameMs.current + (now - gameStartedAt.current)
-        pausedTurnMs.current = pausedTurnMs.current + (now - turnStartedAt.current)
-        gamePausedRef.current = true
-        return true
-      }
-    })
+    const now = Date.now()
+    const wasPaused = gamePausedRef.current
+    if (wasPaused) {
+      // Resuming: reset wall-clock origins; accumulated values remain
+      gameStartedAt.current = now
+      turnStartedAt.current = now
+      gamePausedRef.current = false
+      setGamePaused(false)
+    } else {
+      // Pausing: snapshot elapsed time into accumulators
+      pausedGameMs.current = pausedGameMs.current + (now - gameStartedAt.current)
+      pausedTurnMs.current = pausedTurnMs.current + (now - turnStartedAt.current)
+      gamePausedRef.current = true
+      setGamePaused(true)
+    }
   }, [])
 
   return {
