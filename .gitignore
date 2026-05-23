@@ -1,0 +1,11 @@
+node_modules/
+dist/
+.env
+.env.local
+*.log
+.agent-status
+.specs/
+.DS_Store
+coverage/
+playwright-report/
+test-results/
