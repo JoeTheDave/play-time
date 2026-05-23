@@ -1,9 +1,11 @@
 import { useNavigate } from 'react-router-dom'
 import { v4 as uuid } from 'uuid'
+import { DndContext, type DragEndEvent } from '@dnd-kit/core'
+import { SortableContext, arrayMove, verticalListSortingStrategy } from '@dnd-kit/sortable'
 import { ErrorBoundary } from '../components/ErrorBoundary'
 import { PlayerSetupCard } from '../components/PlayerSetupCard'
 import { useGameContext } from '../context/GameContext'
-import { PLAYER_COLORS } from '../lib/colors'
+import { PLAYER_COLORS, firstUnusedColor } from '../lib/colors'
 import type { Player } from '../types'
 
 const MAX_PLAYERS = 12
@@ -11,8 +13,8 @@ const MIN_PLAYERS = 2
 
 function createDefaultPlayers(): Player[] {
   return [
-    { id: uuid(), name: 'Player 1', color: PLAYER_COLORS[0] ?? '#E63946', totalMs: 0, isActive: false },
-    { id: uuid(), name: 'Player 2', color: PLAYER_COLORS[1] ?? '#2196F3', totalMs: 0, isActive: false },
+    { id: uuid(), name: 'Player 1', color: PLAYER_COLORS[0] ?? '#E63946', totalMs: 0, isActive: false, turnHistory: [] },
+    { id: uuid(), name: 'Player 2', color: PLAYER_COLORS[1] ?? '#2196F3', totalMs: 0, isActive: false, turnHistory: [] },
   ]
 }
 
@@ -24,8 +26,8 @@ function SetupPageInner() {
   const players = setupPlayers.length > 0 ? setupPlayers : createDefaultPlayers()
 
   function ensureInitialized(fn: (current: Player[]) => Player[]) {
-    const current = setupPlayers.length > 0 ? setupPlayers : createDefaultPlayers()
-    setSetupPlayers(fn(current))
+    // Use the same 'players' variable (consistent UUIDs within this render cycle)
+    setSetupPlayers(fn(players))
   }
 
   function handleNameChange(id: string, name: string) {
@@ -41,16 +43,45 @@ function SetupPageInner() {
   function handleAddPlayer() {
     ensureInitialized(current => {
       if (current.length >= MAX_PLAYERS) return current
-      const colorIndex = current.length
-      const color = PLAYER_COLORS[colorIndex] ?? '#607D8B'
+      const color = firstUnusedColor(current.map(p => p.color))
       const newPlayer: Player = {
         id: uuid(),
         name: `Player ${current.length + 1}`,
         color,
         totalMs: 0,
         isActive: false,
+        turnHistory: [],
       }
       return [...current, newPlayer]
+    })
+  }
+
+  function handleColorChange(id: string, color: string) {
+    ensureInitialized(current => {
+      const conflictPlayer = current.find(p => p.color === color && p.id !== id)
+      if (conflictPlayer) {
+        // Swap colors
+        const targetPlayer = current.find(p => p.id === id)
+        if (!targetPlayer) return current
+        const oldColor = targetPlayer.color
+        return current.map(p => {
+          if (p.id === id) return { ...p, color }
+          if (p.id === conflictPlayer.id) return { ...p, color: oldColor }
+          return p
+        })
+      }
+      return current.map(p => (p.id === id ? { ...p, color } : p))
+    })
+  }
+
+  function handleDragEnd(event: DragEndEvent) {
+    const { active, over } = event
+    if (!over || active.id === over.id) return
+    ensureInitialized(current => {
+      const oldIndex = current.findIndex(p => p.id === active.id)
+      const newIndex = current.findIndex(p => p.id === over.id)
+      if (oldIndex === -1 || newIndex === -1) return current
+      return arrayMove(current, oldIndex, newIndex)
     })
   }
 
@@ -69,17 +100,22 @@ function SetupPageInner() {
         <h1 className="mb-2 text-3xl font-bold text-gray-900">PlayTime</h1>
         <p className="mb-6 text-gray-500">Set up your players to get started.</p>
 
-        <div className="mb-4 space-y-2">
-          {players.map(player => (
-            <PlayerSetupCard
-              key={player.id}
-              player={player}
-              onChange={name => handleNameChange(player.id, name)}
-              onRemove={() => handleRemove(player.id)}
-              showRemove={canRemovePlayer}
-            />
-          ))}
-        </div>
+        <DndContext onDragEnd={handleDragEnd}>
+          <SortableContext items={players.map(p => p.id)} strategy={verticalListSortingStrategy}>
+            <div className="mb-4 space-y-2">
+              {players.map(player => (
+                <PlayerSetupCard
+                  key={player.id}
+                  player={player}
+                  onChange={name => handleNameChange(player.id, name)}
+                  onRemove={() => handleRemove(player.id)}
+                  onColorChange={color => handleColorChange(player.id, color)}
+                  showRemove={canRemovePlayer}
+                />
+              ))}
+            </div>
+          </SortableContext>
+        </DndContext>
 
         <div className="flex gap-3">
           {canAddPlayer && (

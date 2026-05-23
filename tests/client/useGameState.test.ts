@@ -10,6 +10,7 @@ const makePlayers = (count: number): Player[] =>
     color: '#000000',
     totalMs: 0,
     isActive: false,
+    turnHistory: [],
   }))
 
 describe('useGameState', () => {
@@ -258,5 +259,107 @@ describe('useGameState', () => {
 
     // After switching, turn should start fresh (close to 0)
     expect(result.current.currentTurnMs).toBeLessThan(500)
+  })
+
+  describe('turnHistory tracking', () => {
+    it('starts all players with empty turnHistory', () => {
+      const players = makePlayers(3)
+      const { result } = renderHook(() => useGameState(players))
+      result.current.players.forEach(p => {
+        expect(p.turnHistory).toEqual([])
+      })
+    })
+
+    it('prepends elapsed turn to outgoing player turnHistory on switch', () => {
+      const players = makePlayers(2)
+      const { result } = renderHook(() => useGameState(players))
+
+      act(() => {
+        vi.advanceTimersByTime(3000)
+      })
+
+      act(() => {
+        result.current.setActivePlayer('player-2')
+      })
+
+      const player1 = result.current.players.find(p => p.id === 'player-1')
+      expect(player1?.turnHistory).toHaveLength(1)
+      expect(player1?.turnHistory[0]).toBeGreaterThanOrEqual(3000)
+    })
+
+    it('accumulates multiple turns in turnHistory, most-recent first', () => {
+      const players = makePlayers(3)
+      const { result } = renderHook(() => useGameState(players))
+
+      // Player 1 gets 3 seconds
+      act(() => {
+        vi.advanceTimersByTime(3000)
+      })
+      act(() => {
+        result.current.setActivePlayer('player-2')
+      })
+
+      // Player 2 gets 2 seconds
+      act(() => {
+        vi.advanceTimersByTime(2000)
+      })
+      act(() => {
+        result.current.setActivePlayer('player-1')
+      })
+
+      // Player 1 gets another 4 seconds
+      act(() => {
+        vi.advanceTimersByTime(4000)
+      })
+      act(() => {
+        result.current.setActivePlayer('player-3')
+      })
+
+      const player1 = result.current.players.find(p => p.id === 'player-1')
+      // player1 should have 2 history entries (most recent first)
+      expect(player1?.turnHistory).toHaveLength(2)
+      // Most recent turn (~4000ms) should come first
+      expect(player1?.turnHistory[0]).toBeGreaterThanOrEqual(4000)
+      // First turn (~3000ms) should be second
+      expect(player1?.turnHistory[1]).toBeGreaterThanOrEqual(3000)
+      expect(player1?.turnHistory[1]).toBeLessThan(4000)
+    })
+
+    it('pause/resume does NOT add to turnHistory', () => {
+      const players = makePlayers(2)
+      const { result } = renderHook(() => useGameState(players))
+
+      act(() => {
+        vi.advanceTimersByTime(2000)
+      })
+      act(() => {
+        result.current.togglePause()
+      })
+      act(() => {
+        vi.advanceTimersByTime(1000)
+      })
+      act(() => {
+        result.current.togglePause()
+      })
+
+      // No player switch happened, so no turnHistory entries
+      const player1 = result.current.players.find(p => p.id === 'player-1')
+      expect(player1?.turnHistory).toHaveLength(0)
+    })
+
+    it('incoming player turnHistory is unchanged on switch', () => {
+      const players = makePlayers(2)
+      const { result } = renderHook(() => useGameState(players))
+
+      act(() => {
+        vi.advanceTimersByTime(5000)
+      })
+      act(() => {
+        result.current.setActivePlayer('player-2')
+      })
+
+      const player2 = result.current.players.find(p => p.id === 'player-2')
+      expect(player2?.turnHistory).toEqual([])
+    })
   })
 })

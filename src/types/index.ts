@@ -4,6 +4,7 @@ export interface Player {
   color: string
   totalMs: number
   isActive: boolean
+  turnHistory: number[]
 }
 
 export interface GameState {

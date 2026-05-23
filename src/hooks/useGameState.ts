@@ -18,6 +18,7 @@ export function useGameState(initialPlayers: Player[]): GameStateHook {
       ...p,
       isActive: i === 0,
       totalMs: 0,
+      turnHistory: [],
     }))
   )
 
@@ -90,7 +91,7 @@ export function useGameState(initialPlayers: Player[]): GameStateHook {
 
       return prevPlayers.map(p => {
         if (p.isActive) {
-          return { ...p, isActive: false, totalMs: p.totalMs + elapsedTurn }
+          return { ...p, isActive: false, totalMs: p.totalMs + elapsedTurn, turnHistory: [elapsedTurn, ...p.turnHistory] }
         }
         if (p.id === id) {
           return { ...p, isActive: true }

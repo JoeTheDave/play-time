@@ -37,7 +37,7 @@ test.describe('Full game flow', () => {
     await expect(player2Card.getByText('This turn')).toBeVisible()
 
     // Pause the game
-    const gameTimerLocator = page.locator('.font-mono.text-4xl')
+    const gameTimerLocator = page.locator('.font-mono.text-4xl.font-bold')
     await page.getByRole('button', { name: 'Pause' }).click()
 
     // Verify Resume button is shown (pause is now active)
@@ -107,6 +107,55 @@ test.describe('Full game flow', () => {
     await page.waitForTimeout(500)
     const player2ThisTurnAfter = await player2Card.getByText(/\d:\d\d:\d\d\.\d\d\d/).nth(1).textContent()
     expect(player2ThisTurnAfter).not.toBe(player2ThisTurnBefore)
+  })
+
+  test('setup: change player 2 color via swatch picker', async ({ page }) => {
+    await page.goto('/')
+
+    // Player 2's swatch is the second color swatch button
+    const colorSwatches = page.getByRole('button', { name: /Player color/i })
+    await expect(colorSwatches).toHaveCount(2)
+
+    // Click player 2's color swatch to open picker
+    await colorSwatches.nth(1).click()
+
+    // Picker should be visible with 12 color options
+    const colorOptions = page.getByRole('button', { name: /Select color/i })
+    await expect(colorOptions).toHaveCount(12)
+
+    // Select the green color (PLAYER_COLORS[2] = #4CAF50)
+    await page.getByRole('button', { name: 'Select color #4CAF50' }).click()
+
+    // Picker should close
+    await expect(colorOptions).toHaveCount(0)
+
+    // Player 2's swatch should now show green
+    await expect(colorSwatches.nth(1)).toHaveCSS('background-color', 'rgb(76, 175, 80)')
+  })
+
+  test('recent turns: play several turns and verify history entries appear', async ({ page }) => {
+    await page.goto('/')
+    await page.getByRole('button', { name: 'Start Game' }).click()
+    await expect(page).toHaveURL('/game')
+
+    const player1Card = page.getByRole('button', { name: /Player 1/ })
+    const player2Card = page.getByRole('button', { name: /Player 2/ })
+
+    // Switch turns 3 times so Player 1 gets 2 history entries
+    await page.waitForTimeout(200)
+    await player2Card.click()
+    await page.waitForTimeout(200)
+    await player1Card.click()
+    await page.waitForTimeout(200)
+    await player2Card.click()
+
+    // Player 1 should now have 2 "Recent" entries (turned twice)
+    const player1RecentTimes = player1Card.locator('.font-mono.tabular-nums').filter({ hasNotText: /^\d:\d\d:\d\d\.\d\d\d$/ })
+    // Check the Recent label is visible in player 1's card
+    await expect(player1Card.getByText('Recent')).toBeVisible()
+
+    // Player 2 should have at least 1 entry
+    await expect(player2Card.getByText('Recent')).toBeVisible()
   })
 
   test('clicking a player while paused has no effect', async ({ page }) => {

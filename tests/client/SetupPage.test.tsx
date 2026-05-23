@@ -3,6 +3,7 @@ import { render, screen, fireEvent, within } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
 import { SetupPage } from '../../src/pages/SetupPage'
 import { GameProvider } from '../../src/context/GameContext'
+import { PLAYER_COLORS } from '../../src/lib/colors'
 
 // Mock useNavigate
 const mockNavigate = vi.fn()
@@ -86,5 +87,44 @@ describe('SetupPage', () => {
     renderSetupPage()
     fireEvent.click(screen.getByRole('button', { name: 'Start Game' }))
     expect(mockNavigate).toHaveBeenCalledWith('/game')
+  })
+
+  describe('Add Player color assignment', () => {
+    it('assigns first unused color (not color-by-index) when adding a player', () => {
+      renderSetupPage()
+      // Default: player 1 has PLAYER_COLORS[0], player 2 has PLAYER_COLORS[1]
+      // Add player 3 — should get PLAYER_COLORS[2]
+      fireEvent.click(screen.getByRole('button', { name: '+ Add Player' }))
+      const swatches = screen.getAllByRole('button', { name: /Player color/i })
+      // Third swatch should have PLAYER_COLORS[2] color
+      expect(swatches[2]).toHaveStyle({ backgroundColor: PLAYER_COLORS[2] })
+    })
+  })
+
+  describe('color picker', () => {
+    it('shows color picker popover when swatch is clicked', () => {
+      renderSetupPage()
+      const swatches = screen.getAllByRole('button', { name: /Player color/i })
+      fireEvent.click(swatches[0]!)
+      const colorOptions = screen.getAllByRole('button', { name: /Select color/i })
+      expect(colorOptions).toHaveLength(12)
+    })
+
+    it('swaps colors when selecting a color already used by another player', () => {
+      renderSetupPage()
+      // Player 1: PLAYER_COLORS[0], Player 2: PLAYER_COLORS[1]
+      const swatches = screen.getAllByRole('button', { name: /Player color/i })
+
+      // Click player 1's swatch to open picker
+      fireEvent.click(swatches[0]!)
+      // Select Player 2's color (PLAYER_COLORS[1])
+      const player2Color = PLAYER_COLORS[1]!
+      fireEvent.click(screen.getByRole('button', { name: `Select color ${player2Color}` }))
+
+      // Player 1 should now have PLAYER_COLORS[1] and player 2 should have PLAYER_COLORS[0]
+      const updatedSwatches = screen.getAllByRole('button', { name: /Player color/i })
+      expect(updatedSwatches[0]).toHaveStyle({ backgroundColor: PLAYER_COLORS[1] })
+      expect(updatedSwatches[1]).toHaveStyle({ backgroundColor: PLAYER_COLORS[0] })
+    })
   })
 })

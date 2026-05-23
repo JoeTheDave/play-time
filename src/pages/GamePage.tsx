@@ -52,6 +52,7 @@ function GamePageInner() {
           display: 'grid',
           gridTemplateColumns: tileWidth > 0 ? `repeat(${cols}, ${tileWidth}px)` : undefined,
           gridAutoRows: tileHeight > 0 ? `${tileHeight}px` : undefined,
+          gap: '10px',
         }}
       >
         {players.map(player => {
@@ -63,6 +64,7 @@ function GamePageInner() {
               currentTurnMs={isActive ? currentTurnMs : 0}
               isActive={isActive}
               isPaused={gamePaused}
+              turnHistory={player.turnHistory}
               onClick={() => {
                 if (!gamePaused) {
                   setActivePlayer(player.id)

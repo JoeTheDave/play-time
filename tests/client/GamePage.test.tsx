@@ -21,6 +21,7 @@ const makePlayers = (count: number): Player[] =>
     color: '#E63946',
     totalMs: 0,
     isActive: i === 0,
+    turnHistory: [],
   }))
 
 function renderWithPlayers(players: Player[]) {
@@ -108,5 +109,12 @@ describe('GamePage', () => {
     renderWithPlayers([])
     // The page content (player cards) should not be present
     expect(screen.queryByText('Player 1')).not.toBeInTheDocument()
+  })
+
+  it('tile container has 10px gap between tiles', () => {
+    renderWithPlayers(makePlayers(4))
+
+    const gridContainer = document.querySelector('[style*="grid-template-columns"]') as HTMLElement
+    expect(gridContainer.style.gap).toBe('10px')
   })
 })
