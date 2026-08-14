@@ -1,12 +1,16 @@
-name: CI
+name: Post-deploy tests
+
+# Rebuilt by spec 1786707286785 (central-command's universal-worker overhaul): the fast
+# lane commits straight to `master` and the deploy fires from that push.
+# The suite here is REPORT-ONLY — a red run is a signal to read in the thread, never a
+# blocked deploy. Feature branches trigger nothing; they are no longer part of the flow.
 
 on:
   push:
-    branches-ignore:
-      - master
+    branches: [master]
 
 jobs:
-  test:
+  post-deploy-tests:
     name: Test
     runs-on: ubuntu-latest
 
@@ -33,54 +37,3 @@ jobs:
 
       - name: Run E2E tests
         run: npm run test:e2e
-
-  merge-to-master:
-    name: Auto-merge to master
-    needs: test
-    if: |
-      github.event_name == 'push' &&
-      github.ref != 'refs/heads/master'
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-          token: ${{ secrets.REPO_TOKEN }}
-
-      - name: Merge to master
-        id: merge
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git fetch origin master
-          git checkout master
-          git merge --no-ff origin/${{ github.ref_name }} -m "Merge branch '${{ github.ref_name }}' into master"
-          git push origin master
-          echo "merge_commit=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
-
-      - name: Notify Central Command
-        continue-on-error: true
-        env:
-          BRANCH: ${{ github.ref_name }}
-          MERGE_COMMIT: ${{ steps.merge.outputs.merge_commit }}
-          CC_SECRET: ${{ secrets.CC_WEBHOOK_SECRET }}
-        run: |
-          curl -sf -X POST -H "Content-Type: application/json" -H "Authorization: Bearer $CC_SECRET" \
-            -d '{"event":"branch-merged","branchName":"'"$BRANCH"'","mergeCommit":"'"$MERGE_COMMIT"'"}' \
-            https://central-command.sage-development.net/api/webhook/github
-
-  notify-ci-failure:
-    name: Notify CI failure
-    needs: test
-    if: |
-      failure() &&
-      github.ref != 'refs/heads/master'
-    runs-on: ubuntu-latest
-    steps:
-      - name: Notify Central Command
-        env:
-          CC_SECRET: ${{ secrets.CC_WEBHOOK_SECRET }}
-        run: |
-          curl -sf -X POST -H "Content-Type: application/json" -H "Authorization: Bearer $CC_SECRET" \
-            -d '{"event":"ci-failed","branchName":"${{ github.ref_name }}","runId":"${{ github.run_id }}","repo":"${{ github.repository }}"}' \
-            https://central-command.sage-development.net/api/webhook/github || true
